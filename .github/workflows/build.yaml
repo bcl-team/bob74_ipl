@@ -1,0 +1,48 @@
+name: Build on Tag
+
+# This fork has no upstream CI: releases here were cut by hand and carried no assets at all, so the
+# server image quietly fell back to downloading the raw source tarball. That fallback works for a
+# pure-Lua resource, but it is invisible — and the enhanced channel needs more than a tag anyway:
+# download-resources.bash resolves a channel by looking for a RELEASE, and a bare tag produces none.
+#
+# Only enhanced-* is wired up here. Legacy tags in this fork are bare version numbers (2.6.1), which
+# no `v*` glob would match, and they keep their existing manual release flow untouched.
+
+on:
+  push:
+    tags:
+      - 'enhanced-*'
+
+jobs:
+  build-on-tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Package the resource
+        run: |
+          # The repo root IS the resource. Everything except repo furniture goes in: enumerating the
+          # ~25 dlc_* directories by hand would silently drop whatever the next upstream sync adds,
+          # which is the same quiet-staleness trap this fork already has a history of.
+          mkdir -p bob74_ipl
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='bob74_ipl' \
+            --exclude='LICENSE' \
+            --exclude='README.md' \
+            ./ bob74_ipl/
+          # The name is load-bearing twice over: download-resources.bash looks for an asset called
+          # <repo>.tar.gz first, and build-server-cfg.bash does `ensure bob74_ipl`, so the archive
+          # has to unpack to a directory of exactly that name.
+          tar -czf ${{ github.event.repository.name }}.tar.gz bob74_ipl
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: false
+          files: ${{ github.event.repository.name }}.tar.gz
