@@ -1,0 +1,5 @@
+fx_version 'cerulean'
+game 'gta5'
+server_only 'yes'
+dependency 'bob74_ipl'
+server_script 'server.lua'
