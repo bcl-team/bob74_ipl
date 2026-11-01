@@ -1,14 +1,23 @@
--- DoomsdayFacility: 345.00000000 4842.00000000 -60.00000000
+-- Shelter Facility: -2300.0 300.0 -60.0. Separate IPL avoids vanilla cached proxy coordinates.
+local legacyFacilityIpl = "xm_x17dlc_int_placement_interior_33_x17dlc_int_02_milo_"
+local function resolveFacilityInterior()
+    RemoveIpl(legacyFacilityIpl)
+    RequestIpl("bcl_shelter_bunker")
+    local interiorId = GetInteriorAtCoords(-2300.0, 300.0, -59.0)
+    if interiorId ~= 0 then DoomsdayFacility.interiorId = interiorId end
+    return interiorId
+end
 exports('GetDoomsdayFacilityObject', function()
+    if resolveFacilityInterior() == 0 then error('Shelter Facility interior is not registered') end
     return DoomsdayFacility
 end)
 
 DoomsdayFacility = {
-    interiorId = 269313,
+    interiorId = 0,
 
     Ipl = {
         Interior = {
-            ipl = "xm_x17dlc_int_placement_interior_33_x17dlc_int_02_milo_",
+            ipl = "bcl_shelter_bunker",
 
             Load = function(color)
                 EnableIpl(DoomsdayFacility.Ipl.Interior.ipl, true)
@@ -174,7 +183,7 @@ DoomsdayFacility = {
 
         Bedroom = {
             Enable = function(state)
-                local handle = GetClosestObjectOfType(367.99, 4827.745, -59.0, 1.0, `xm_prop_x17_l_glass_03`, false, false, false)
+                local handle = GetClosestObjectOfType(-2277.01, 285.745, -59.0, 1.0, `xm_prop_x17_l_glass_03`, false, false, false)
 
                 if state then
                     if handle == 0 then
@@ -185,7 +194,7 @@ DoomsdayFacility = {
                             Wait(0)
                         end
 
-                        local privacyGlass = CreateObject(model, 367.99, 4827.745, -59.0, false, false, false)
+                        local privacyGlass = CreateObject(model, -2277.01, 285.745, -59.0, false, false, false)
 
                         SetEntityAsMissionEntity(privacyGlass, true, 0)
                         SetEntityCompletelyDisableCollision(privacyGlass, false, 0)
@@ -201,7 +210,7 @@ DoomsdayFacility = {
             end,
 
             Control = {
-                position = vector3(372.115, 4827.504, -58.47),
+                position = vector3(-2272.885, 285.504, -58.47),
                 rotation = vector3(0.0, 0.0, 0.0),
 
                 Enable = function(state)
@@ -234,27 +243,27 @@ DoomsdayFacility = {
                 {
                     modelHash = `xm_prop_x17_l_door_glass_01`,
                     entityHash = `xm_prop_x17_l_door_frame_01`,
-                    entityPos = vector3(359.22, 4846.043, -58.85)
+                    entityPos = vector3(-2285.78, 304.043, -58.85)
                 },
                 {
                     modelHash = `xm_prop_x17_l_door_glass_01`,
                     entityHash = `xm_prop_x17_l_door_frame_01`,
-                    entityPos = vector3(369.066, 4846.273, -58.85)
+                    entityPos = vector3(-2275.934, 304.273, -58.85)
                 },
                 {
                     modelHash = `xm_prop_x17_l_glass_01`,
                     entityHash = `xm_prop_x17_l_frame_01`,
-                    entityPos = vector3(358.843, 4845.103, -60.0)
+                    entityPos = vector3(-2286.157, 303.103, -60.0)
                 },
                 {
                     modelHash = `xm_prop_x17_l_glass_02`,
                     entityHash = `xm_prop_x17_l_frame_02`,
-                    entityPos = vector3(366.309, 4847.281, -60.0)
+                    entityPos = vector3(-2278.691, 305.281, -60.0)
                 },
                 {
                     modelHash = `xm_prop_x17_l_glass_03`,
                     entityHash = `xm_prop_x17_l_frame_03`,
-                    entityPos = vector3(371.194, 4841.27, -60.0)
+                    entityPos = vector3(-2273.806, 299.27, -60.0)
                 }
             },
 
@@ -291,7 +300,7 @@ DoomsdayFacility = {
             end,
 
             Control = {
-                position = vector3(367.317, 4846.729, -58.448),
+                position = vector3(-2277.683, 304.729, -58.448),
                 rotation = vector3(0.0, 0.0, -16.0),
 
                 Enable = function(state)
@@ -388,6 +397,14 @@ DoomsdayFacility = {
     },
 
     LoadDefault = function()
+        local deadline = GetGameTimer() + 15000
+        while resolveFacilityInterior() == 0 do
+            if GetGameTimer() >= deadline then
+                print('^1[bob74_ipl] Shelter Facility interior was not registered; defaults were not applied.^7')
+                return
+            end
+            Wait(100)
+        end
         DoomsdayFacility.Ipl.Exterior.Load()
         DoomsdayFacility.Ipl.Interior.Load()
 
